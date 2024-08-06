@@ -4,6 +4,7 @@ import logging
 import re
 import string
 from operator import itemgetter
+
 try:
     from cdecimal import Decimal, ROUND_HALF_UP
 except ImportError:
@@ -56,7 +57,9 @@ else:
     def cache(**kwargs):
         def decorator(fn):
             return fn
+
         return decorator
+
 
 def get_line_cluster_key(line_dir: T_dir) -> Callable[[T_obj], T_num]:
     return {
@@ -697,10 +700,9 @@ class WordExtractor:
         return WordMap(list(self.iter_extract_tuples(chars)))
 
     def x_within_tol(self, char_1, char_2, x_tolerance):
-        x_dist = (max(char_1["x0"], char_2["x0"]) - 
-                min(char_1["x1"], char_2["x1"]))
+        x_dist = max(char_1["x0"], char_2["x0"]) - min(char_1["x1"], char_2["x1"])
         return x_dist <= x_tolerance
-    
+
     # Inspiration and credits: https://github.com/jsvine/pdfplumber/issues/116#issuecomment-620631109
     def objects_to_rect(self, objects):
         return {
@@ -711,28 +713,35 @@ class WordExtractor:
         }
 
     def extract_words(self, chars):
-        x_tolerance=self.x_tolerance
-        y_tolerance=self.y_tolerance
-        keep_blank_chars=self.keep_blank_chars
+        x_tolerance = self.x_tolerance
+        y_tolerance = self.y_tolerance
+        keep_blank_chars = self.keep_blank_chars
 
         x_tolerance = decimalize(x_tolerance)
         y_tolerance = decimalize(y_tolerance)
-        
-        non_sp_chars = [char for char in chars if not char["text"].isspace() or keep_blank_chars]
+
+        non_sp_chars = [
+            char for char in chars if not char["text"].isspace() or keep_blank_chars
+        ]
         sorted_chars = sorted(non_sp_chars, key=lambda char: char["doctop"])
-        
+
         num_chars = len(sorted_chars)
-        
+
         G = nx.Graph()
         [G.add_node(idx) for idx in range(num_chars)]
-        
+
         for idx_a in range(num_chars):
             for idx_b in range(idx_a + 1, num_chars):
-                if decimalize(sorted_chars[idx_b]["doctop"]) > decimalize(sorted_chars[idx_a]["doctop"]) + y_tolerance:
+                if (
+                    decimalize(sorted_chars[idx_b]["doctop"])
+                    > decimalize(sorted_chars[idx_a]["doctop"]) + y_tolerance
+                ):
                     break
-                elif self.x_within_tol(sorted_chars[idx_a], sorted_chars[idx_b], x_tolerance):
+                elif self.x_within_tol(
+                    sorted_chars[idx_a], sorted_chars[idx_b], x_tolerance
+                ):
                     G.add_edge(idx_a, idx_b)
-                    
+
         word_sets = list(nx.connected_components(G))
         words = []
         for word in word_sets:
@@ -744,7 +753,7 @@ class WordExtractor:
             new_word["chars"] = chars
 
             words.append(new_word)
-            
+
         return words
 
     # def extract_words(self, chars: T_obj_list) -> T_obj_list:
@@ -876,8 +885,8 @@ def dedupe_chars(
     return sorted(deduped, key=chars.index)
 
 
-@cache(maxsize = int(10e4))
-def _decimalize(v, q = None):
+@cache(maxsize=int(10e4))
+def _decimalize(v, q=None):
     # If already a decimal, just return itself
     if type(v) == Decimal:
         return v
@@ -893,14 +902,14 @@ def _decimalize(v, q = None):
     # Convert float-like
     elif isinstance(v, numbers.Real):
         if q != None:
-            return Decimal(repr(v)).quantize(Decimal(repr(q)),
-                rounding=ROUND_HALF_UP)
+            return Decimal(repr(v)).quantize(Decimal(repr(q)), rounding=ROUND_HALF_UP)
         else:
             return Decimal(repr(v))
     else:
         raise ValueError("Cannot convert {0} to Decimal.".format(v))
 
-def decimalize(v, q = None):
+
+def decimalize(v, q=None):
     # If already a decimal, just return itself
     if type(v) == Decimal:
         return v
