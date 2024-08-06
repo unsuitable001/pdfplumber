@@ -1,16 +1,11 @@
 import inspect
 import itertools
 import logging
+import numbers
 import re
 import string
+from decimal import ROUND_HALF_UP, Decimal
 from operator import itemgetter
-
-try:
-    from cdecimal import ROUND_HALF_UP, Decimal
-except ImportError:
-    from decimal import Decimal, ROUND_HALF_UP
-
-import numbers
 from typing import (
     Any,
     Callable,
