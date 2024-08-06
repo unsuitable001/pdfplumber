@@ -6,12 +6,11 @@ import string
 from operator import itemgetter
 
 try:
-    from cdecimal import Decimal, ROUND_HALF_UP
+    from cdecimal import ROUND_HALF_UP, Decimal
 except ImportError:
     from decimal import Decimal, ROUND_HALF_UP
-import six
+
 import numbers
-import networkx as nx
 from typing import (
     Any,
     Callable,
@@ -24,6 +23,9 @@ from typing import (
     Tuple,
     Union,
 )
+
+import networkx as nx
+import six
 
 from .._typing import T_bbox, T_dir, T_num, T_obj, T_obj_iter, T_obj_list
 from .clustering import cluster_objects
@@ -703,7 +705,7 @@ class WordExtractor:
         x_dist = max(char_1["x0"], char_2["x0"]) - min(char_1["x1"], char_2["x1"])
         return x_dist <= x_tolerance
 
-    # Inspiration and credits: https://github.com/jsvine/pdfplumber/issues/116#issuecomment-620631109
+    # Credits: https://github.com/jsvine/pdfplumber/issues/116#issuecomment-620631109
     def objects_to_rect(self, objects):
         return {
             "x0": min(map(itemgetter("x0"), objects)),
@@ -712,7 +714,7 @@ class WordExtractor:
             "bottom": max(map(itemgetter("bottom"), objects)),
         }
 
-    def extract_words(self, chars):
+    def extract_words(self, chars) -> T_obj_list:
         x_tolerance = self.x_tolerance
         y_tolerance = self.y_tolerance
         keep_blank_chars = self.keep_blank_chars
@@ -888,7 +890,7 @@ def dedupe_chars(
 @cache(maxsize=int(10e4))
 def _decimalize(v, q=None):
     # If already a decimal, just return itself
-    if type(v) == Decimal:
+    if type(v) is Decimal:
         return v
 
     # If tuple/list passed, bulk-convert
@@ -901,7 +903,7 @@ def _decimalize(v, q=None):
 
     # Convert float-like
     elif isinstance(v, numbers.Real):
-        if q != None:
+        if q is not None:
             return Decimal(repr(v)).quantize(Decimal(repr(q)), rounding=ROUND_HALF_UP)
         else:
             return Decimal(repr(v))
@@ -911,7 +913,7 @@ def _decimalize(v, q=None):
 
 def decimalize(v, q=None):
     # If already a decimal, just return itself
-    if type(v) == Decimal:
+    if type(v) is Decimal:
         return v
 
     # If tuple/list passed, bulk-convert
